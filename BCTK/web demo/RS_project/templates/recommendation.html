@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Product Recommendation System</title>
+        <style>
+            :root {
+                --primary-color: #4285f4;
+                --secondary-color: #34a853;
+                --error-color: #ea4335;
+                --warning-color: #fbbc05;
+                --light-gray: #f5f5f5;
+                --medium-gray: #e0e0e0;
+                --dark-gray: #757575;
+                --text-color: #333;
+                --border-radius: 8px;
+                --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: var(--text-color);
+                background-color: var(--light-gray);
+                padding: 20px;
+            }
+
+            h1,
+            h2,
+            h3 {
+                color: var(--primary-color);
+                margin-bottom: 1rem;
+            }
+
+            .container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 2rem;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .panel {
+                flex: 1;
+                min-width: 300px;
+                background: white;
+                padding: 1.5rem;
+                border-radius: var(--border-radius);
+                box-shadow: var(--box-shadow);
+            }
+
+            .form-group {
+                margin-bottom: 1.2rem;
+            }
+
+            label {
+                display: block;
+                margin-bottom: 0.5rem;
+                font-weight: 500;
+            }
+
+            input,
+            select {
+                width: 100%;
+                padding: 0.8rem;
+                border: 1px solid var(--medium-gray);
+                border-radius: var(--border-radius);
+                font-size: 1rem;
+                transition: border-color 0.3s;
+            }
+
+            input:focus,
+            select:focus {
+                outline: none;
+                border-color: var(--primary-color);
+            }
+
+            button {
+                background-color: var(--primary-color);
+                color: white;
+                border: none;
+                padding: 0.8rem 1.5rem;
+                border-radius: var(--border-radius);
+                font-size: 1rem;
+                cursor: pointer;
+                transition: background-color 0.3s;
+                width: 100%;
+            }
+
+            button:hover {
+                background-color: #3367d6;
+            }
+
+            .button-secondary {
+                background-color: var(--secondary-color);
+            }
+
+            .button-secondary:hover {
+                background-color: #2d9249;
+            }
+
+            .results {
+                margin-top: 1.5rem;
+            }
+
+            .product-card {
+                background: white;
+                border-radius: var(--border-radius);
+                padding: 1.2rem;
+                margin-bottom: 1rem;
+                box-shadow: var(--box-shadow);
+                border-left: 4px solid var(--primary-color);
+            }
+
+            .product-card h3 {
+                margin-bottom: 0.5rem;
+                color: var(--text-color);
+            }
+
+            .product-card p {
+                margin-bottom: 0.3rem;
+            }
+
+            .price {
+                font-weight: bold;
+                color: var(--secondary-color);
+            }
+
+            .probability {
+                display: inline-block;
+                padding: 0.2rem 0.5rem;
+                background-color: var(--primary-color);
+                color: white;
+                border-radius: 20px;
+                font-size: 0.9rem;
+            }
+
+            .loading {
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                border: 3px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                border-top-color: white;
+                animation: spin 1s ease-in-out infinite;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .error-message {
+                color: var(--error-color);
+                padding: 0.8rem;
+                background-color: rgba(234, 67, 53, 0.1);
+                border-radius: var(--border-radius);
+                margin-bottom: 1rem;
+            }
+
+            .success-message {
+                color: var(--secondary-color);
+                padding: 0.8rem;
+                background-color: rgba(52, 168, 83, 0.1);
+                border-radius: var(--border-radius);
+                margin-bottom: 1rem;
+            }
+
+            .info-message {
+                color: var(--primary-color);
+                padding: 0.8rem;
+                background-color: rgba(66, 133, 244, 0.1);
+                border-radius: var(--border-radius);
+                margin-bottom: 1rem;
+            }
+
+            @media (max-width: 768px) {
+                .container {
+                    flex-direction: column;
+                }
+
+                .panel {
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="panel">
+                <h2>Add New Interaction</h2>
+                <form id="interactionForm">
+                    <div class="form-group">
+                        <label for="new_user_id">User ID</label>
+                        <input
+                            type="number"
+                            id="new_user_id"
+                            required
+                            min="0"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new_item_id">Item ID</label>
+                        <input
+                            type="number"
+                            id="new_item_id"
+                            required
+                            min="0"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new_category_id">Category</label>
+                        <select id="new_category_id" required>
+                            <option value="">Select a category</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new_parent_category">Parent Category</label>
+                        <select id="new_parent_category" required>
+                            <option value="">Select a parent category</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new_price">Price</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            id="new_price"
+                            required
+                            min="0"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new_age">Age</label>
+                        <input
+                            type="number"
+                            id="new_age"
+                            required
+                            min="0"
+                            max="120"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new_gender">Gender</label>
+                        <select id="new_gender" required>
+                            <option value="0">Female</option>
+                            <option value="1">Male</option>
+                        </select>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="button-secondary"
+                        onclick="addInteraction()"
+                        id="addInteractionBtn"
+                    >
+                        Add Interaction
+                    </button>
+                </form>
+
+                <div id="interactionResult"></div>
+            </div>
+
+            <div class="panel">
+                <h1>Product Recommendations</h1>
+
+                <div class="form-group">
+                    <label for="user_id">Enter User ID</label>
+                    <input
+                        type="number"
+                        id="user_id"
+                        min="0"
+                        placeholder="e.g. 164536"
+                        required
+                    />
+                </div>
+
+                <button onclick="fetchRecommendations()" id="recommendBtn">
+                    Get Recommendations
+                </button>
+
+                <div class="results" id="results">
+                    <div class="info-message">
+                        Enter a User ID and click "Get Recommendations" to see
+                        personalized product suggestions.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Global variables
+            const API_BASE_URL = 'http://127.0.0.1:8000/api';
+
+            // DOM elements
+            const elements = {
+                userInput: document.getElementById('user_id'),
+                recommendBtn: document.getElementById('recommendBtn'),
+                resultsDiv: document.getElementById('results'),
+                interactionForm: document.getElementById('interactionForm'),
+                addInteractionBtn: document.getElementById('addInteractionBtn'),
+                interactionResult: document.getElementById('interactionResult'),
+                categorySelect: document.getElementById('new_category_id'),
+                parentCategorySelect: document.getElementById(
+                    'new_parent_category',
+                ),
+            };
+
+            /**
+             * Fetch recommendations for a user
+             */
+            async function fetchRecommendations() {
+                const userId = elements.userInput.value.trim();
+
+                // Validate input
+                if (!userId) {
+                    showError(
+                        elements.resultsDiv,
+                        'Please enter a valid User ID',
+                    );
+                    elements.userInput.focus();
+                    return;
+                }
+
+                // Show loading state
+                toggleLoading(elements.recommendBtn, true);
+                clearMessages(elements.resultsDiv);
+                elements.resultsDiv.innerHTML =
+                    '<div class="info-message">Loading recommendations...</div>';
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE_URL}/recommendations/${userId}/`,
+                    );
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(
+                            errorData.message ||
+                                'Failed to fetch recommendations',
+                        );
+                    }
+
+                    const data = await response.json();
+
+                    if (data.recommendations.length === 0) {
+                        elements.resultsDiv.innerHTML = `
+                        <div class="info-message">
+                            No recommendations found for user ${data.user_id}.
+                        </div>
+                    `;
+                        return;
+                    }
+
+                    let html = `<h2>Recommendations for User ${data.user_id}</h2>`;
+
+                    data.recommendations.forEach((rec) => {
+                        const priceDisplay =
+                            rec.price > 2
+                                ? `${rec.price.toLocaleString()}₫`
+                                : `${rec.price.toFixed(3)} (normalized)`;
+
+                        html += `
+                        <div class="product-card">
+                            <h3>Product ID: ${rec.product_id}</h3>
+                            <p><span class="probability">Transaction probability: ${rec.transaction_prob.toFixed(
+                                3,
+                            )}</span></p>
+                            <p><strong>Category:</strong> ${
+                                rec.category_id || 'N/A'
+                            }</p>
+                            <p><strong>Parent Category:</strong> ${
+                                rec.parent_category || 'N/A'
+                            }</p>
+                            <p class="price"><strong>Price:</strong> ${priceDisplay}</p>
+                            <div style="margin-top: 0.5rem;">
+                                <small>
+                                    <strong>Class probabilities:</strong> 
+                                    No interaction (${rec.class_0_prob.toFixed(
+                                        3,
+                                    )}), 
+                                    View (${rec.class_1_prob.toFixed(3)}), 
+                                    Purchase (${rec.class_2_prob.toFixed(3)})
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                    });
+
+                    elements.resultsDiv.innerHTML = html;
+                } catch (error) {
+                    showError(elements.resultsDiv, error.message);
+                } finally {
+                    toggleLoading(elements.recommendBtn, false);
+                }
+            }
+
+            /**
+             * Add a new user-item interaction
+             */
+            async function addInteraction() {
+                const formData = {
+                    user_id:
+                        parseInt(elements.interactionForm.new_user_id.value) ||
+                        0,
+                    item_id:
+                        parseInt(elements.interactionForm.new_item_id.value) ||
+                        0,
+                    category_id:
+                        parseInt(
+                            elements.interactionForm.new_category_id.value,
+                        ) || 0,
+                    parent_category:
+                        parseInt(
+                            elements.interactionForm.new_parent_category.value,
+                        ) || 0,
+                    price:
+                        parseFloat(elements.interactionForm.new_price.value) ||
+                        0,
+                    age: parseInt(elements.interactionForm.new_age.value) || 0,
+                    gender:
+                        parseInt(elements.interactionForm.new_gender.value) ||
+                        0,
+                };
+
+                // Validate required fields
+                if (
+                    !formData.user_id ||
+                    !formData.item_id ||
+                    !formData.category_id ||
+                    !formData.parent_category
+                ) {
+                    showError(
+                        elements.interactionResult,
+                        'Please fill in all required fields',
+                    );
+                    return;
+                }
+
+                // Show loading state
+                toggleLoading(elements.addInteractionBtn, true);
+                clearMessages(elements.interactionResult);
+                elements.interactionResult.innerHTML =
+                    '<div class="info-message">Processing interaction...</div>';
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE_URL}/interactions/`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCookie('csrftoken'),
+                            },
+                            body: JSON.stringify(formData),
+                        },
+                    );
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            data.message || 'Failed to add interaction',
+                        );
+                    }
+
+                    elements.interactionResult.innerHTML = `
+                    <div class="success-message">
+                        <p>Interaction added successfully!</p>
+                        <p><strong>User ID:</strong> ${data.data.user_id}</p>
+                        <p><strong>Item ID:</strong> ${data.data.item_id}</p>
+                        <p><strong>Timestamp:</strong> ${new Date(
+                            data.data.timestamp,
+                        ).toLocaleString()}</p>
+                    </div>
+                `;
+
+                    // Clear form
+                    elements.interactionForm.reset();
+                } catch (error) {
+                    showError(elements.interactionResult, error.message);
+                } finally {
+                    toggleLoading(elements.addInteractionBtn, false);
+                }
+            }
+
+            /**
+             * Load available categories from the API
+             */
+            async function loadCategories() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/categories/`);
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load categories');
+                    }
+
+                    const data = await response.json();
+
+                    // Populate category dropdown
+                    data.categories.forEach((cat) => {
+                        const option = document.createElement('option');
+                        option.value = cat;
+                        option.textContent = `Category ${cat}`;
+                        elements.categorySelect.appendChild(option);
+                    });
+
+                    // Populate parent category dropdown
+                    data.parent_categories.forEach((parent) => {
+                        const option = document.createElement('option');
+                        option.value = parent;
+                        option.textContent = `Parent Category ${parent}`;
+                        elements.parentCategorySelect.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error('Error loading categories:', error);
+                }
+            }
+
+            /**
+             * Helper function to get CSRF token from cookies
+             */
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+
+            /**
+             * Show error message in a container
+             */
+            function showError(container, message) {
+                container.innerHTML = `
+                <div class="error-message">
+                    <strong>Error:</strong> ${message}
+                </div>
+            `;
+            }
+
+            /**
+             * Clear all messages in a container
+             */
+            function clearMessages(container) {
+                const messages = container.querySelectorAll(
+                    '.error-message, .success-message, .info-message',
+                );
+                messages.forEach((msg) => msg.remove());
+            }
+
+            /**
+             * Toggle loading state for a button
+             */
+            function toggleLoading(button, isLoading) {
+                if (isLoading) {
+                    button.disabled = true;
+                    button.innerHTML = `<span class="loading"></span> Processing...`;
+                } else {
+                    button.disabled = false;
+                    if (button.id === 'recommendBtn') {
+                        button.textContent = 'Get Recommendations';
+                    } else {
+                        button.textContent = 'Add Interaction';
+                    }
+                }
+            }
+
+            // Initialize the page
+            document.addEventListener('DOMContentLoaded', () => {
+                loadCategories();
+
+                // Add event listeners for Enter key
+                elements.userInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        fetchRecommendations();
+                    }
+                });
+
+                elements.interactionForm.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addInteraction();
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

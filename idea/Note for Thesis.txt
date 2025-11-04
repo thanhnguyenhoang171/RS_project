@@ -1,0 +1,54 @@
+*** Trang Website ***
+- Hoàn thiện trang web bán điện thoại 
+- category (đổi từ type), thêm document brand
+- Xây dựng thêm các document cho model:
+ 1. User Features (Thông tin Người Dùng)
+	Chứa thông tin về người dùng để giúp mô hình hiểu sở thích cá nhân.
+	📌 Cột dữ liệu cần có:
+		user_id	age	gender	location	purchase_history	avg_rating
+		101		25	Male	HCM			[201, 305]			4.3
+		102		30	Female	HN			[102, 205]			3.9
+	📌 Mô tả cột:
+		user_id: Mã người dùng
+		age: Tuổi của người dùng
+		gender: Giới tính (Male / Female)
+		location: Địa điểm của người dùng
+		purchase_history: Danh sách sản phẩm đã mua
+		avg_rating: Đánh giá trung bình mà người dùng đưa ra
+	🔥 Encoding:
+		Biến gender → One-hot encoding (Male = [1,0], Female = [0,1])
+		Biến location → Embedding hoặc One-hot encoding
+		Biến purchase_history → Vector hóa (TF-IDF hoặc word2vec)
+2️. Item Features (Thông tin Sản Phẩm)
+	📌 Cột dữ liệu cần có:
+		product_id	category	price	brand	avg_rating	features (image, description)
+		201			Phone		500		Apple	4.5			[image_vector, text_vector]
+		305			Laptop		900		Dell	4.2			[image_vector, text_vector]
+	📌 Mô tả cột:
+		product_id: Mã sản phẩm
+		category: Loại sản phẩm (Điện thoại, Laptop, ...)
+		price: Giá sản phẩm
+		brand: Thương hiệu (Apple, Samsung, Dell)
+		avg_rating: Đánh giá trung bình của sản phẩm
+		features: Đặc trưng hình ảnh & mô tả sản phẩm
+	🔥 Encoding:
+		category & brand → One-hot encoding
+		features (image, description) → CNN-based feature extraction
+3️. Interaction Data (Dữ liệu tương tác)
+	Dữ liệu này rất quan trọng vì mô hình LightFM & Deep Q-Learning sẽ học từ đây!
+	📌 Cột dữ liệu cần có:
+		user_id	product_id	rating	clicks	views	purchase	time_spent
+		101		201			5.0		3		5		1			120s
+		102		305			4.0		1		3		0			45s
+	📌 Mô tả cột:
+		user_id: Người dùng nào thực hiện tương tác
+		product_id: Sản phẩm được tương tác
+		rating: Đánh giá của người dùng (1-5 sao)
+		clicks: Số lần nhấp vào sản phẩm
+		views: Số lần xem sản phẩm
+		purchase: Người dùng có mua sản phẩm không? (1 = Yes, 0 = No)
+		time_spent: Tổng thời gian xem sản phẩm
+	🔥 Encoding:
+		rating → Chuẩn hóa (Min-Max Scaling)
+		clicks, views, time_spent → Trực tiếp làm input cho CNN
+		purchase → Sử dụng làm Reward cho Deep Q-Learning
